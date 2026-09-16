@@ -4,21 +4,26 @@ const config = require('./config/env');
 const categoryService = require('./services/categoryService');
 
 const startServer = async () => {
-  // Connect to Database
-  await connectDB();
-
-  // Seed system default categories if needed
-  try {
-    await categoryService.seedDefaultCategories();
-  } catch (err) {
-    console.error('[Category Seed Error]', err.message);
-  }
-
-  // Start Express Server
+  // Start Express Server immediately so Railway/hosting health checks pass
   const server = app.listen(config.port, () => {
     console.log(`[Server] Personal Finance Server running in ${config.env} mode on port ${config.port}`);
     console.log(`[Server] Health Check: http://localhost:${config.port}/api/health`);
   });
+
+  // Connect to Database
+  try {
+    const conn = await connectDB();
+    if (conn) {
+      // Seed system default categories once DB is connected
+      try {
+        await categoryService.seedDefaultCategories();
+      } catch (err) {
+        console.error('[Category Seed Error]', err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[Startup DB Error]', err.message);
+  }
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
