@@ -14,20 +14,46 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration
-const allowedOrigins = [config.clientUrl, 'http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+const configuredOrigins = config.clientUrl
+  ? config.clientUrl.split(',').map((url) => url.trim().replace(/\/$/, ''))
+  : [];
+
+const allowedOrigins = [
+  ...configuredOrigins,
+  'https://finance-frontend-git-main-jeego.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin || allowedOrigins.indexOf(origin) !== -1 || config.env === 'development') {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      // In development mode, allow all origins
+      if (config.env === 'development') return callback(null, true);
+
+      // Allow if origin is explicitly in allowed list or any .vercel.app domain
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        /^https:\/\/.*\.vercel\.app$/.test(origin);
+
+      if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error('Blocked by CORS policy'));
+        callback(new Error(`Origin ${origin} is blocked by CORS policy`));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   })
 );
+
+app.options('*', cors());
 
 app.use('/api', apiLimiter);
 
