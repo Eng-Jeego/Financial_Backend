@@ -4,8 +4,8 @@ const config = require('./config/env');
 const categoryService = require('./services/categoryService');
 
 const startServer = async () => {
-  // Start Express Server immediately so Railway/hosting health checks pass
-  const server = app.listen(config.port, () => {
+  // Start Express Server immediately on 0.0.0.0 so Railway/hosting health checks pass
+  const server = app.listen(config.port, '0.0.0.0', () => {
     console.log(`[Server] Personal Finance Server running in ${config.env} mode on port ${config.port}`);
     console.log(`[Server] Health Check: http://localhost:${config.port}/api/health`);
   });
