@@ -43,6 +43,16 @@ const protect = asyncHandler(async (req, res, next) => {
       );
     }
 
+    // Check if user account is deactivated
+    if (user.status === 'INACTIVE') {
+      return next(
+        new AppError(
+          'Your account has been deactivated. Please contact an administrator.',
+          HTTP_STATUS.FORBIDDEN
+        )
+      );
+    }
+
     // Attach user to request
     req.user = user;
     next();

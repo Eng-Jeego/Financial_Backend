@@ -7,8 +7,9 @@ const { HTTP_STATUS } = require('../constants');
  */
 const authorize = (...roles) => {
   return (req, res, next) => {
-    const currentRole = req.user?.role || 'user';
-    if (!roles.includes(currentRole)) {
+    const currentRole = (req.user?.role || 'USER').toUpperCase();
+    const normalizedAllowedRoles = roles.map((r) => String(r).toUpperCase());
+    if (!normalizedAllowedRoles.includes(currentRole)) {
       return next(
         new AppError('You do not have permission to perform this action', HTTP_STATUS.FORBIDDEN)
       );

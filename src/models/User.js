@@ -39,8 +39,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ['USER', 'ADMIN', 'user', 'admin'],
+      default: 'USER',
+      set: (val) => (val ? val.toUpperCase() : 'USER'),
+    },
+    status: {
+      type: String,
+      enum: ['ACTIVE', 'INACTIVE'],
+      default: 'ACTIVE',
+      index: true,
+      set: (val) => (val ? val.toUpperCase() : 'ACTIVE'),
     },
   },
   {
@@ -84,6 +92,7 @@ userSchema.methods.generateAuthToken = function () {
     {
       id: this._id,
       email: this.email,
+      role: this.role,
     },
     config.jwtSecret,
     {

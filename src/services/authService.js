@@ -1,10 +1,11 @@
 const User = require('../models/User');
 const AppError = require('../utils/appError');
 const { HTTP_STATUS } = require('../constants');
+const auditLogService = require('./auditLogService');
 
 class AuthService {
   /**
-   * Register a new user
+   * Register a new user - public registration ALWAYS creates role: 'USER' and status: 'ACTIVE'
    */
   async register({ fullName, email, password, currency }) {
     // Check if user already exists
@@ -17,12 +18,14 @@ class AuthService {
       );
     }
 
-    // Create user
+    // Create user (Strictly force USER role and ACTIVE status)
     const user = await User.create({
       fullName: fullName.trim(),
       email: email.toLowerCase().trim(),
       password,
       currency: currency || 'USD',
+      role: 'USER',
+      status: 'ACTIVE',
     });
 
     // Generate JWT Token
@@ -35,6 +38,7 @@ class AuthService {
         email: user.email,
         currency: user.currency,
         role: user.role,
+        status: user.status,
         createdAt: user.createdAt,
       },
       token,
@@ -63,8 +67,27 @@ class AuthService {
       );
     }
 
+    // Enforce account status: deactivated accounts cannot access the system
+    if (user.status === 'INACTIVE') {
+      throw new AppError(
+        'Your account has been deactivated. Please contact an administrator.',
+        HTTP_STATUS.FORBIDDEN
+      );
+    }
+
     // Generate JWT Token
     const token = user.generateAuthToken();
+
+    // Log admin login to audit log
+    if (user.role && user.role.toUpperCase() === 'ADMIN') {
+      await auditLogService.logAction({
+        adminId: user._id,
+        adminEmail: user.email,
+        action: 'LOGIN',
+        description: `Admin ${user.email} logged into the system`,
+        metadata: { loginTime: new Date().toISOString() },
+      });
+    }
 
     return {
       user: {
@@ -73,6 +96,7 @@ class AuthService {
         email: user.email,
         currency: user.currency,
         role: user.role,
+        status: user.status,
         createdAt: user.createdAt,
       },
       token,
@@ -87,6 +111,14 @@ class AuthService {
     if (!user) {
       throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
     }
+
+    if (user.status === 'INACTIVE') {
+      throw new AppError(
+        'Your account has been deactivated. Please contact an administrator.',
+        HTTP_STATUS.FORBIDDEN
+      );
+    }
+
     return user;
   }
 
