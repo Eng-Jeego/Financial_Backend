@@ -34,6 +34,24 @@ const getUsers = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Admin explicitly creates a new user account
+ * @route   POST /api/admin/users
+ * @access  Private (Admin only)
+ */
+const createUser = asyncHandler(async (req, res) => {
+  const { fullName, email, password, role, status, currency } = req.body;
+  const user = await adminService.createUser(req.user, {
+    fullName,
+    email,
+    password,
+    role,
+    status,
+    currency,
+  });
+  return sendSuccess(res, { user }, 'User account created successfully', HTTP_STATUS.CREATED);
+});
+
+/**
  * @desc    Get user details with financial overview and transaction history
  * @route   GET /api/admin/users/:id
  * @access  Private (Admin only)
@@ -133,6 +151,7 @@ const getReports = asyncHandler(async (req, res) => {
 module.exports = {
   getDashboard,
   getUsers,
+  createUser,
   getUserById,
   updateUser,
   updateUserStatus,

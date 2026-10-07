@@ -331,6 +331,50 @@ class AdminService {
   }
 
   /**
+   * Admin explicitly creates a new user account
+   */
+  async createUser(adminUser, { fullName, email, password, role = 'USER', status = 'ACTIVE', currency = 'USD' }) {
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      throw new AppError('An account with this email address already exists', HTTP_STATUS.CONFLICT);
+    }
+
+    const normalizedRole = ['USER', 'ADMIN'].includes(String(role).toUpperCase())
+      ? String(role).toUpperCase()
+      : 'USER';
+
+    const normalizedStatus = ['ACTIVE', 'INACTIVE'].includes(String(status).toUpperCase())
+      ? String(status).toUpperCase()
+      : 'ACTIVE';
+
+    const newUser = await User.create({
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      password,
+      role: normalizedRole,
+      status: normalizedStatus,
+      currency: currency ? currency.toUpperCase().trim() : 'USD',
+    });
+
+    await auditLogService.logAction({
+      adminId: adminUser._id,
+      adminEmail: adminUser.email,
+      action: 'CREATE_USER',
+      targetUserId: newUser._id,
+      targetUserEmail: newUser.email,
+      description: `Admin ${adminUser.email} created new ${normalizedRole} account for ${newUser.email}`,
+      metadata: { role: normalizedRole, status: normalizedStatus },
+    });
+
+    const userObj = newUser.toObject();
+    delete userObj.password;
+    delete userObj.__v;
+
+    return userObj;
+  }
+
+  /**
    * Get single user details with lifetime & date-filtered financial summary
    */
   async getUserById(adminUser, id, { startDate, endDate }) {

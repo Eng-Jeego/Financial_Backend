@@ -20,6 +20,7 @@ const adminAuditLogSchema = new mongoose.Schema(
       enum: [
         'LOGIN',
         'VIEW_USER',
+        'CREATE_USER',
         'UPDATE_USER',
         'ACTIVATE_USER',
         'DEACTIVATE_USER',

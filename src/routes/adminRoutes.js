@@ -5,6 +5,7 @@ const { protect } = require('../middleware/auth');
 const { authorize } = require('../middleware/authorize');
 const {
   validateUserQuery,
+  validateCreateUser,
   validateUpdateUser,
   validateUpdateStatus,
   validateResetPassword,
@@ -18,6 +19,7 @@ router.get('/dashboard', adminController.getDashboard);
 
 // User Management Routes
 router.get('/users', validateUserQuery, adminController.getUsers);
+router.post('/users', validateCreateUser, adminController.createUser);
 router.get('/users/:id', adminController.getUserById);
 router.patch('/users/:id', validateUpdateUser, adminController.updateUser);
 router.patch('/users/:id/status', validateUpdateStatus, adminController.updateUserStatus);

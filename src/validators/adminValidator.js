@@ -106,8 +106,44 @@ const validateResetPassword = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates admin user creation payload
+ */
+const validateCreateUser = (req, res, next) => {
+  const { fullName, email, password, role, status, currency } = req.body;
+  const errors = [];
+
+  if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 2) {
+    errors.push({ field: 'fullName', message: 'Full name must be at least 2 characters long' });
+  }
+
+  const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/;
+  if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+    errors.push({ field: 'email', message: 'Please provide a valid email address' });
+  }
+
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    errors.push({ field: 'password', message: 'Password must be at least 6 characters long' });
+  }
+
+  if (role !== undefined && !['USER', 'ADMIN'].includes(String(role).toUpperCase())) {
+    errors.push({ field: 'role', message: 'Role must be either USER or ADMIN' });
+  }
+
+  if (status !== undefined && !['ACTIVE', 'INACTIVE'].includes(String(status).toUpperCase())) {
+    errors.push({ field: 'status', message: 'Status must be either ACTIVE or INACTIVE' });
+  }
+
+  if (errors.length > 0) {
+    return next(new AppError('Validation failed', HTTP_STATUS.BAD_REQUEST, errors));
+  }
+
+  next();
+};
+
 module.exports = {
   validateUserQuery,
+  validateCreateUser,
   validateUpdateUser,
   validateUpdateStatus,
   validateResetPassword,
